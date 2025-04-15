@@ -12,6 +12,6 @@ const { createClient } = require('@supabase/supabase-js');
 // process.env.SUPABASE_KEY: The API key for accessing your Supabase project.
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Export the Supabase client instance for use in other parts of the application.
+
 module.exports = supabase;
 

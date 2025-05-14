@@ -11,8 +11,28 @@ router.get('/', async (req, res) => {
 
 // Create a recipe
 router.post('/', async (req, res) => {
-  const { title, content, user_id } = req.body;
-  const { data, error } = await supabase.from('recipes').insert([{ title, content, user_id }]);
+  // Extract JWT token from Authorization header
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
+  // Verify token and get user data
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError) return res.status(401).json({ error: authError });
+
+  // Extract recipe data from request body
+  const { title, content } = req.body;
+  
+  // Insert new recipe into database
+  const { data, error } = await supabase
+    .from('recipes')
+    .insert([{ 
+      title, 
+      content, 
+      user_id: user.id // Associate recipe with authenticated user
+    }])
+    .select()
+    .single();
+
   if (error) return res.status(400).json({ error });
   res.status(201).json(data);
 });

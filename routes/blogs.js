@@ -4,18 +4,34 @@ const supabase = require('../supabaseClient');
 
 // Get all blogs
 router.get('/', async (req, res) => {
-  const { data, error } = await supabase.from('blogs').select('*');
-  if (error) return res.status(400).json({ error });
-  res.json(data);
-});
+    const { data, error } = await supabase
+      .from('blogs')
+      .select('*')
+      .order('created_at', { ascending: false });
+  
+    if (error) return res.status(400).json({ error });
+    res.json(data);
+  });
+  
 
 // Create a blog
 router.post('/', async (req, res) => {
-  const { title, content, user_id } = req.body;
-  const { data, error } = await supabase.from('blogs').insert([{ title, content, user_id }]);
-  if (error) return res.status(400).json({ error });
-  res.status(201).json(data);
-});
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Missing token' });
+  
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError) return res.status(401).json({ error: authError });
+  
+    const { title, content } = req.body;
+  
+    const { data, error } = await supabase
+      .from('blogs')
+      .insert([{ title, content, user_id: user.id }]);
+  
+    if (error) return res.status(400).json({ error });
+    res.status(201).json(data);
+  });
+  
 
 // Get blogs by authenticated user
 router.get('/my-blogs', async (req, res) => {
@@ -25,7 +41,12 @@ router.get('/my-blogs', async (req, res) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError) return res.status(401).json({ error: authError });
 
-  const { data, error } = await supabase.from('blogs').select('*').eq('user_id', user.id);
+  const { data, error } = await supabase
+  .from('blogs')
+  .select('*')
+  .eq('user_id', user.id)
+  .order('created_at', { ascending: false });
+
   if (error) return res.status(400).json({ error });
   res.json(data);
 });
